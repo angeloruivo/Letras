@@ -1,15 +1,23 @@
-let letterTiles = []; // Array para guardar os objetos das letras
-let alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-let associations = {}; // Objeto para mapear Letra -> {nome, drawFunc}
-let currentState = 'startScreen'; // Estados: 'startScreen', 'alphabetView', 'objectView'
-let selectedAssociation = null; // Guarda a associação da letra clicada
-let tileWidth, tileHeight, spacing, cols, rows, totalGridHeight; // Variáveis de layout
-let brightColors = []; // Paleta de cores vivas
+// Copie TODO o código da resposta anterior, mas SUBSTITUA
+// a função calculateLayout inteira por esta nova versão acima.
+// O restante do código (setup, draw, mousePressed, LetterTile,
+// drawMascot, drawBee, ..., drawZebra, windowResized) continua igual.
 
-// Cores específicas para desenhos (mantidas para clareza)
+// Exemplo (cole o código completo anterior aqui, e depois cole a função
+// calculateLayout nova por cima da antiga):
+
+let letterTiles = [];
+let alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+let associations = {};
+let currentState = 'startScreen';
+let selectedAssociation = null;
+let tileWidth, tileHeight, spacing, cols, rows, totalGridHeight; // <- Adicionado totalGridHeight aqui se não estava
+let brightColors = [];
+
 let brown, lightBrown, darkBrown, green, darkGreen, grey, lightGrey, pink, yellow, orange, red, blue, black, white;
 
 function setup() {
+  // ... (código setup inalterado) ...
   createCanvas(windowWidth, windowHeight);
   textFont('sans-serif');
 
@@ -41,46 +49,40 @@ function setup() {
     'W': { name: 'Wafer', drawFunc: drawWafer }, 'X': { name: 'Xícara', drawFunc: drawCup },
     'Y': { name: 'Yoga', drawFunc: drawYoga }, 'Z': { name: 'Zebra', drawFunc: drawZebra }
   };
-  // ------------------------------------------
-
-  // calculateLayout() e createLetterTiles() serão chamados ao sair da tela inicial
 }
 
-
-// --- AJUSTES NO LAYOUT ---
+// --- AJUSTES NO LAYOUT (FORÇANDO 4 COLUNAS) ---
 function calculateLayout() {
-  // Tenta mais colunas se a tela for larga, menos se for estreita/baixa
-  let desiredCols = floor(map(width, 300, 1200, 4, 7, true)); // Mapeia largura para colunas (4 a 7)
+  // Define explicitamente 4 colunas
+  let desiredCols = 4;
+  cols = desiredCols; // Define a variável global 'cols'
+
   let availableHeight = height * 0.9; // Usa 90% da altura para a grade
   let topMargin = height * 0.05; // Margem superior
 
-  // Ajusta espaçamento e tamanho do tile iterativamente
-  let maxIterations = 5;
-  for (let i = 0; i < maxIterations; i++) {
-      spacing = max(10, min(width * 0.02, height * 0.02)); // Espaçamento menor e adaptativo
-      tileWidth = (width - (desiredCols + 1) * spacing) / desiredCols;
-      tileHeight = tileWidth * 1.05; // Tiles quase quadrados
-      rows = ceil(alphabet.length / desiredCols);
-      totalGridHeight = rows * (tileHeight + spacing) - spacing;
+  // Calcula espaçamento baseado no menor entre largura/altura
+  spacing = max(10, min(width * 0.02, height * 0.02));
 
-      // Se a grade ainda for muito alta, tenta reduzir as colunas (se possível)
-      if (totalGridHeight > availableHeight && desiredCols > 3) {
-          desiredCols--;
-      } else {
-          break; // Encontrou um layout que pode caber ou não pode reduzir mais
-      }
+  // Calcula a largura do tile para caber 4 colunas + espaçamentos
+  tileWidth = (width - (cols + 1) * spacing) / cols;
+
+  // Calcula a altura do tile (ligeiramente retangular)
+  tileHeight = tileWidth * 1.05;
+
+  // Calcula quantas linhas serão necessárias
+  rows = ceil(alphabet.length / cols); // 26 letras / 4 colunas = 7 linhas
+
+  // Calcula a altura total que a grade ocuparia
+  totalGridHeight = rows * (tileHeight + spacing) - spacing;
+
+  // Se a grade calculada for mais alta que o espaço disponível,
+  // reduz o tamanho dos tiles proporcionalmente para caber.
+  if (totalGridHeight > availableHeight) {
+    let scaleFactor = availableHeight / totalGridHeight;
+    tileHeight *= scaleFactor * 0.98; // Reduz um pouco mais para garantir margem
+    tileWidth = tileHeight / 1.05; // Mantém proporção
+    totalGridHeight = rows * (tileHeight + spacing) - spacing; // Recalcula altura final com tiles menores
   }
-
-   // Se mesmo com 3 colunas não couber, os tiles serão menores implicitamente
-   // Ou poderíamos escalar o tileHeight aqui:
-   if (totalGridHeight > availableHeight) {
-       let scaleFactor = availableHeight / totalGridHeight;
-       tileHeight *= scaleFactor * 0.98; // Reduz um pouco mais para garantir margem
-       tileWidth = tileHeight / 1.05; // Mantém proporção
-       totalGridHeight = rows * (tileHeight + spacing) - spacing; // Recalcula altura final
-   }
-
-  cols = desiredCols; // Define cols final
 
   // Calcula posição inicial X para centralizar horizontalmente
   let totalGridWidth = cols * (tileWidth + spacing) - spacing;
@@ -89,14 +91,23 @@ function calculateLayout() {
   // Calcula posição inicial Y (centraliza verticalmente se couber, senão começa na margem)
    let startY = topMargin + tileHeight / 2;
    if (totalGridHeight < availableHeight) {
-        startY = (height - totalGridHeight) / 2 + tileHeight / 2; // Centraliza
+        // Tenta centralizar verticalmente se houver espaço de sobra
+        startY = (height - totalGridHeight) / 2 + tileHeight / 2;
    }
+   // Garante que não comece colado no topo
+   startY = max(startY, topMargin + tileHeight / 2);
+
 
    // Retorna os valores calculados para createLetterTiles usar
+   // Note: cols, rows, tileWidth, tileHeight, spacing são globais ou já definidas
+   // então só precisamos retornar startX e startY que são locais aqui.
    return { startX, startY };
 }
+// --- FIM DOS AJUSTES DE LAYOUT ---
+
 
 function createLetterTiles() {
+  // ... (código createLetterTiles inalterado) ...
   letterTiles = []; // Limpa antes de recriar
 
   // Obtém as posições calculadas
@@ -117,10 +128,9 @@ function createLetterTiles() {
     }
   }
 }
-// --- FIM DOS AJUSTES DE LAYOUT ---
-
 
 function draw() {
+  // ... (código draw inalterado) ...
   background(230, 245, 255); // Fundo azul ainda mais claro
 
   if (currentState === 'startScreen') {
@@ -154,6 +164,7 @@ function draw() {
 }
 
 function displayStartScreen() {
+  // ... (código displayStartScreen inalterado) ...
     // Fundo simples para start screen
     background(173, 216, 230); // Light blue solid
 
@@ -170,8 +181,8 @@ function displayStartScreen() {
     text("Clique para começar!", width / 2, height * 0.9);
 }
 
-
 function mousePressed() {
+  // ... (código mousePressed inalterado) ...
   if (currentState === 'startScreen') {
     currentState = 'alphabetView';
     // Chama createLetterTiles AQUI, que por sua vez chama calculateLayout
@@ -195,7 +206,8 @@ function mousePressed() {
   }
 }
 
-// --- Classe LetterTile (sem alterações significativas) ---
+// --- Classe LetterTile ---
+// ... (código LetterTile inalterado) ...
 class LetterTile {
   constructor(char, x, y, w, h, col) {
     this.char = char; this.x = x; this.y = y; this.w = w; this.h = h; this.color = col;
@@ -221,14 +233,10 @@ class LetterTile {
   }
 }
 
-
 // ===========================================
 // --- FUNÇÕES DE DESENHO (A - Z) ---
 // ===========================================
-// (As funções de desenho permanecem as mesmas do código anterior)
-// Elas já são a maior parte do código e simplificá-las mais
-// pode tornar os objetos irreconhecíveis.
-
+// ... (todas as funções drawMascot, drawBee ... drawZebra inalteradas) ...
 function drawMascot(x, y, size) { /* ... código do mascote inalterado ... */
   push();
   translate(x, y);
@@ -586,6 +594,7 @@ function drawZebra() { /* ... código inalterado ... */
 
 
 // --- Adaptação ao Tamanho da Janela ---
+// ... (código windowResized inalterado) ...
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
   // Recalcula e recria apenas se não estiver na tela inicial
